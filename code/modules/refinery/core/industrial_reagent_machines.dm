@@ -36,7 +36,7 @@
 		visible_message(span_danger("\The [src] splashes everywhere as it is disassembled!"))
 		reagents.splash_area(get_turf(src),2)
 
-/obj/machinery/reagent_refinery/attackby(var/obj/item/O as obj, var/mob/user as mob)
+/obj/machinery/reagent_refinery/attackby(obj/item/O as obj, mob/user as mob)
 	if (istype(O, /obj/item/multitool)) // Solar grubs
 		return ..()
 	if(O.has_tool_quality(TOOL_WRENCH))
@@ -93,13 +93,13 @@
 		update_icon()
 
 /// Transfers reagents from us to the next machine. Calls handle_transfer() on any target machines to check if they can accept reagents.
-/obj/machinery/reagent_refinery/proc/transfer_tank( var/datum/reagents/RT, var/obj/machinery/reagent_refinery/target, var/source_forward_dir, var/filter_id = "")
+/obj/machinery/reagent_refinery/proc/transfer_tank( datum/reagents/RT, obj/machinery/reagent_refinery/target, source_forward_dir, filter_id = "")
 	PROTECTED_PROC(TRUE)
 	if(RT.total_volume <= 0 || !anchored || !target.anchored)
 		return 0
 	if(active_power_usage > 0 && !can_use_power_oneoff(active_power_usage))
 		return 0
-	if(!istype(target,/obj/machinery/reagent_refinery)) // cannot transfer into grinders anyway, so it's fine to do it this way.
+	if(!istype(target,/obj/machinery/reagent_refinery) || istype(target,/obj/machinery/reagent_refinery/grinder)) // Grinders don't allow input
 		return 0
 	var/transfered = target.handle_transfer(src,RT,source_forward_dir, amount_per_transfer_from_this, filter_id)
 	if(transfered > 0 && active_power_usage > 0)
@@ -107,7 +107,7 @@
 	return transfered
 
 /// Handles reagent recieving from transfer_tank(), returns how much reagent was transfered if successful. Overriden to prevent access from certain sides or for filtering.
-/obj/machinery/reagent_refinery/proc/handle_transfer(var/atom/origin_machine, var/datum/reagents/RT, var/source_forward_dir, var/transfer_rate, var/filter_id = "") // Handle transfers in an override, instead of one monster function that typechecks like transfer_tank() used to be
+/obj/machinery/reagent_refinery/proc/handle_transfer(atom/origin_machine, datum/reagents/RT, source_forward_dir, transfer_rate, filter_id = "") // Handle transfers in an override, instead of one monster function that typechecks like transfer_tank() used to be
 	// Transfer to target in amounts every process tick!
 	if(filter_id == "")
 		var/amount = RT.trans_to_obj(src, transfer_rate)
@@ -129,10 +129,10 @@
 	return transfer_tank( reagents, target, dir)
 
 /// Handle transfers that require a minimum amount of reagents to happen
-/obj/machinery/reagent_refinery/proc/minimum_reagents_for_transfer(var/obj/machinery/reagent_refinery/target)
+/obj/machinery/reagent_refinery/proc/minimum_reagents_for_transfer(obj/machinery/reagent_refinery/target)
 	return 0
 
-/obj/machinery/reagent_refinery/proc/tutorial(var/flags,var/list/examine_list)
+/obj/machinery/reagent_refinery/proc/tutorial(flags,list/examine_list)
 	// Specialty
 	if(flags & REFINERY_TUTORIAL_HUB)
 		examine_list += "A trolly tanker can be drained or filled depending on if this machine is attached to the input or output of another machine. "
@@ -153,3 +153,40 @@
 	// No power needed
 	if(flags & REFINERY_TUTORIAL_NOPOWER)
 		examine_list += "Does not require power. "
+
+/// Checks neighbouring machines for if we should connect visually to them
+/obj/machinery/reagent_refinery/proc/update_input_connection_overlays(overlay_state)
+	for(var/direction in GLOB.cardinal)
+		var/turf/T = get_step(get_turf(src),direction)
+		var/obj/machinery/reagent_refinery/other = locate() in T
+		if(!other?.anchored)
+			continue
+
+		// Waste processors do not connect to anything as outgoing
+		if(istype(other,/obj/machinery/reagent_refinery/waste_processor))
+			continue
+
+		// Filter allows side connection
+		if(istype(other,/obj/machinery/reagent_refinery/filter))
+			var/obj/machinery/reagent_refinery/filter/filt = other
+			var/check_dir = 0
+			if(filt.get_filter_side() == 1)
+				check_dir = turn(filt.dir, 270)
+			else
+				check_dir = turn(filt.dir, 90)
+			if(check_dir == GLOB.reverse_dir[direction])
+				var/image/intake = image(icon, icon_state = overlay_state, dir = direction)
+				add_overlay(intake)
+				continue
+
+		// Splitter only allows side connections
+		if(istype(other,/obj/machinery/reagent_refinery/splitter))
+			if(GLOB.reverse_dir[direction] in list(turn(other.dir,90),turn(other.dir,-90)))
+				var/image/intake = image(icon, icon_state = overlay_state, dir = direction)
+				add_overlay(intake)
+			continue
+
+		// Standard connection
+		if(other.dir == GLOB.reverse_dir[direction] && (dir != direction || istype(src,/obj/machinery/reagent_refinery/waste_processor)))
+			var/image/intake = image(icon, icon_state = overlay_state, dir = direction)
+			add_overlay(intake)

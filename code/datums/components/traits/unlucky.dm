@@ -88,10 +88,10 @@
 	RegisterSignal(parent, COMSIG_STUN_EFFECT_ACT, PROC_REF(check_taser))
 	RegisterSignal(parent, COMSIG_MOB_ROLLED_DICE, PROC_REF(check_roll))
 	RegisterSignal(parent, COMSIG_HUMAN_ON_CATCH_THROW, PROC_REF(check_throw))
-	RegisterSignal(parent, COMSIG_PICKED_UP_ITEM, PROC_REF(check_pickup))
+	RegisterSignal(parent, COMSIG_ITEM_PICKUP, PROC_REF(check_pickup))
 
 /datum/component/omen/UnregisterFromParent()
-	UnregisterSignal(parent, list(COMSIG_ON_CARBON_SLIP, COMSIG_MOVABLE_MOVED, COMSIG_STUN_EFFECT_ACT, COMSIG_MOVED_DOWN_STAIRS, COMSIG_MOB_ROLLED_DICE, COMSIG_HUMAN_ON_CATCH_THROW, COMSIG_PICKED_UP_ITEM))
+	UnregisterSignal(parent, list(COMSIG_ON_CARBON_SLIP, COMSIG_MOVABLE_MOVED, COMSIG_STUN_EFFECT_ACT, COMSIG_MOVED_DOWN_STAIRS, COMSIG_MOB_ROLLED_DICE, COMSIG_HUMAN_ON_CATCH_THROW, COMSIG_ITEM_PICKUP))
 
 /datum/component/omen/proc/consume_omen()
 	incidents_left--
@@ -146,7 +146,8 @@
 			if(darth_airlock.locked || !darth_airlock.arePowerSystemsOn())
 				continue
 			to_chat(living_guy, span_warning("The airlock suddenly closes on you!"))
-			living_guy.Paralyse(1 SECONDS)
+			living_guy.Paralyse(5)
+			living_guy.Sleeping(5)
 			slam_airlock(darth_airlock)
 			consume_omen()
 			return
@@ -194,7 +195,7 @@
 				our_guy.visible_message(span_danger("[our_guy] slips on a spill near the [evil_disposal] and falls in!"), span_boldwarning("You slip on a spill near the [evil_disposal] and fall in!"))
 				living_guy.forceMove(evil_disposal)
 				evil_disposal.flush = TRUE
-				evil_disposal.update()
+				evil_disposal.update_icon()
 				living_guy.Stun(5)
 				consume_omen()
 				return
@@ -221,7 +222,7 @@
 		for(var/obj/machinery/vending/darth_vendor in the_turf)
 			if(darth_vendor.stat & (BROKEN|NOPOWER))
 				continue
-			to_chat(living_guy, span_warning("The delivery chute of [darth_vendor] raises up..."))
+			darth_vendor.visible_message(span_warning("[darth_vendor] suddenly clunks and the delivery chute raises up!"))
 			darth_vendor.throw_item(living_guy)
 			consume_omen()
 			return
@@ -278,6 +279,8 @@
 		for(var/obj/structure/table/evil_table in the_turf)
 			if(!evil_table.material) //We only want tables, not just table frames.
 				continue
+			if(!prob(10)) //Reduce the chance further, due to the number of tables that are passed in normal play.
+				continue
 			living_guy.visible_message(span_danger("[living_guy] stubs [living_guy.p_their()] toe on [evil_table]!"), span_bolddanger("You stub your toe on [evil_table]!"))
 			living_guy.apply_damage(2 * damage_mod, BRUTE, pick(BP_L_FOOT, BP_R_FOOT), used_weapon = "blunt force trauma")
 			living_guy.adjustHalLoss(25) //It REALLY hurts.
@@ -332,7 +335,7 @@
 
 	return
 
-/datum/component/omen/proc/check_roll(mob/living/unlucky_soul, var/obj/item/dice/the_dice, silent, result)
+/datum/component/omen/proc/check_roll(mob/living/unlucky_soul, obj/item/dice/the_dice, silent, result)
 	SIGNAL_HANDLER
 	if(prob(20 * luck_mod))
 		//unlucky_soul.visible_message(span_danger("[unlucky_soul] rolls [the_dice] with it landing on the edge of [result] before tilting over!"), span_boldwarning("You feel dreadfully unlucky as you roll the dice!"))

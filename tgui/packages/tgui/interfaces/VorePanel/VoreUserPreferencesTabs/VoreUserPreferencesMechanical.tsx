@@ -1,12 +1,16 @@
 import { Section, Stack } from 'tgui-core/components';
-
-import type { localPrefs } from '../types';
-import { VoreUserPreferenceItem } from '../VorePanelElements/VoreUserPreferenceItem';
+import { stripModeModel } from '../constants';
+import type { DropdownPrefernces, LocalPrefs } from '../types';
+import {
+  VoreUserPreferenceDropdown,
+  VoreUserPreferenceItem,
+} from '../VorePanelElements/VoreUserPreferenceItem';
 
 export const VoreUserPreferencesMechanical = (props: {
-  preferences: localPrefs;
+  preferences: LocalPrefs;
+  dropdownPreferences: DropdownPrefernces;
 }) => {
-  const { preferences } = props;
+  const { preferences, dropdownPreferences } = props;
 
   return (
     <Section title="Mechanical Preferences">
@@ -89,9 +93,22 @@ export const VoreUserPreferencesMechanical = (props: {
             tooltipPosition="right"
           />
         </Stack.Item>
-        <Stack.Item basis="32%">
+        <Stack.Item basis="32%" grow>
           <VoreUserPreferenceItem
             spec={preferences.toggle_consume_liquid_belly}
+            tooltipPosition="top"
+          />
+        </Stack.Item>
+        <Stack.Item basis="32%">
+          <VoreUserPreferenceItem
+            spec={preferences.afk_pred}
+            tooltipPosition="left"
+          />
+        </Stack.Item>
+        <Stack.Item basis="35%">
+          <VoreUserPreferenceDropdown
+            spec={stripModeModel}
+            currentActive={dropdownPreferences.strip_active.toString()}
             tooltipPosition="top"
           />
         </Stack.Item>

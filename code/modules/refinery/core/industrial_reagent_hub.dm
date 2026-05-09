@@ -41,7 +41,10 @@
 	var/obj/machinery/other = locate(/obj/machinery/reagent_refinery) in T
 	var/intake = FALSE
 	if(other && other.anchored)// Waste processors do not connect to anything as outgoing
-		if(!istype(other,/obj/machinery/reagent_refinery/waste_processor))
+		if(istype(other,/obj/machinery/reagent_refinery/splitter))
+			if(GLOB.reverse_dir[dir] in list(turn(other.dir,90),turn(other.dir,-90)))
+				intake = TRUE
+		else if(!istype(other,/obj/machinery/reagent_refinery/waste_processor))
 			// weird handling for side connections... Otherwise, anything pointing into use gets connected back!
 			if(istype(other,/obj/machinery/reagent_refinery/filter))
 				var/obj/machinery/reagent_refinery/filter/filt = other
@@ -62,7 +65,7 @@
 		var/image/pipe = image(icon, icon_state = "hub_cons", dir = dir)
 		add_overlay(pipe)
 
-/obj/machinery/reagent_refinery/hub/handle_transfer(var/atom/origin_machine, var/datum/reagents/RT, var/source_forward_dir, var/transfer_rate, var/filter_id = "")
+/obj/machinery/reagent_refinery/hub/handle_transfer(atom/origin_machine, datum/reagents/RT, source_forward_dir, transfer_rate, filter_id = "")
 	if(istype(origin_machine,/obj/machinery/reagent_refinery/hub)) // Hubs cannot send into other hubs
 		return 0
 	if(dir != GLOB.reverse_dir[source_forward_dir] ) // The hub must be facing into its source to accept input, unlike others

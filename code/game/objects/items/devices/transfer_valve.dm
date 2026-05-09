@@ -71,6 +71,9 @@
 		sense_proximity(callback = TYPE_PROC_REF(/atom,HasProximity))
 
 /obj/item/transfer_valve/attack_self(mob/user)
+	. = ..(user)
+	if(.)
+		return TRUE
 	tgui_interact(user)
 
 /obj/item/transfer_valve/tgui_state(mob/user)
@@ -116,7 +119,7 @@
 		update_icon()
 		add_fingerprint(ui.user)
 
-/obj/item/transfer_valve/proc/process_activation(var/obj/item/D)
+/obj/item/transfer_valve/proc/process_activation(obj/item/D)
 	if(toggle)
 		toggle = FALSE
 		toggle_valve()

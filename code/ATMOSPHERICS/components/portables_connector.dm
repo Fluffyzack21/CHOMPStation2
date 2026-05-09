@@ -42,14 +42,14 @@
 	icon_state = "connector"
 
 /obj/machinery/atmospherics/portables_connector/update_underlays()
-	if(..())
-		underlays.Cut()
-		var/turf/T = get_turf(src)
-		if(!istype(T))
-			return
-		add_underlay(T, node, dir, node?.icon_connect_type)
+	..()
+	underlays.Cut()
+	var/turf/T = get_turf(src)
+	if(!istype(T))
+		return
+	add_underlay(T, node, dir, node?.icon_connect_type)
 
-/obj/machinery/atmospherics/portables_connector/hide(var/i)
+/obj/machinery/atmospherics/portables_connector/hide(i)
 	update_underlays()
 
 /obj/machinery/atmospherics/portables_connector/process()
@@ -146,7 +146,7 @@
 	return null
 
 
-/obj/machinery/atmospherics/portables_connector/attackby(var/obj/item/W as obj, var/mob/user as mob)
+/obj/machinery/atmospherics/portables_connector/attackby(obj/item/W as obj, mob/user as mob)
 	if (!W.has_tool_quality(TOOL_WRENCH))
 		return ..()
 	if (connected_device)
@@ -165,4 +165,4 @@
 			span_infoplain(span_bold("\The [user]") + " unfastens \the [src]."), \
 			span_notice("You have unfastened \the [src]."), \
 			"You hear a ratchet.")
-		deconstruct()
+		atom_deconstruct()

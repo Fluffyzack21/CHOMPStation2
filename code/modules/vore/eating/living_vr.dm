@@ -24,6 +24,7 @@
 	var/digestion_in_progress = FALSE	// Gradual corpse gurgles
 	var/trash_catching = FALSE					//Toggle for trash throw vore
 	var/list/trait_injection_reagents = list()	//List of all the reagents allowed to be used for injection via venom bite
+	var/skin_reagent
 	var/trait_injection_selected = null			//What trait reagent you're injecting.
 	var/trait_injection_amount = 5				//How much you're injecting with traits.
 	var/trait_injection_verb = "bite"			//Which fluffy manner you're doing the injecting.
@@ -270,7 +271,7 @@
 //
 //	Proc for applying vore preferences, given bellies
 //
-/mob/proc/copy_from_prefs_vr(var/bellies = TRUE, var/full_vorgans = FALSE) // full_vorgans var to bypass 1-belly load optimization.
+/mob/proc/copy_from_prefs_vr(bellies = TRUE, full_vorgans = FALSE) // full_vorgans var to bypass 1-belly load optimization.
 	if(!client || !client.prefs_vr)
 		to_chat(src,span_warning("You attempted to apply your vore prefs but somehow you're in this character without a client.prefs_vr variable. Tell a dev."))
 		return FALSE
@@ -366,7 +367,7 @@
 
 	return remember_default
 
-/datum/preferences/proc/return_to_character_slot(mob/user, var/remembered_default)
+/datum/preferences/proc/return_to_character_slot(mob/user, remembered_default)
 	load_character(remembered_default)
 	user.client?.prefs_vr.load_vore()
 	sanitize_preferences()
@@ -374,7 +375,7 @@
 //
 // Release everything in every vore organ
 //
-/mob/living/proc/release_vore_contents(var/include_absorbed = TRUE, var/silent = FALSE)
+/mob/living/proc/release_vore_contents(include_absorbed = TRUE, silent = FALSE)
 	for(var/obj/belly/B as anything in vore_organs)
 		B.release_all_contents(include_absorbed, silent)
 
@@ -446,7 +447,7 @@
 	if(!istype(tasted))
 		return
 
-	if(!checkClickCooldown() || incapacitated(INCAPACITATION_KNOCKOUT))
+	if(!checkClickCooldown() || incapacitated(INCAPACITATION_KNOCKOUT) || is_paralyzed())
 		return
 
 	setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
@@ -458,8 +459,15 @@
 		if((tasted.touch_reaction_flags & SPECIES_TRAIT_PERSONAL_BUBBLE) && (!tasted.grabbed_by.len || !tasted.stat))
 			visible_message(span_warning("[src] tries to lick [tasted], but they dodge out of the way!"),span_warning("You try to lick [tasted], but they deftly avoid your attempt."))
 			return
+		if(tasted.skin_reagent && ishuman(src) && (tasted != src))
+			var/mob/living/carbon/human/us_but_human = src
+			us_but_human.ingested.add_reagent(tasted.skin_reagent, 10)
+
 		visible_message(span_vwarning("[src] licks [tasted]!"),span_notice("You lick [tasted]. They taste rather like [tasted.get_taste_message()]."),span_infoplain(span_bold("Slurp!")))
 		//balloon_alert_visible("licks [tasted]!", "tastes like [tasted.get_taste_message()]")
+	// This has already passed consent tests
+	if(HAS_TRAIT(src, TRAIT_SLOBBER))
+		tasted.adjust_wet_stacks(2)
 
 /mob/living/proc/get_taste_message(allow_generic = 1)
 	if(!vore_taste && !allow_generic)
@@ -493,7 +501,7 @@
 
 	if(!istype(smelled))
 		return
-	if(!checkClickCooldown() || incapacitated(INCAPACITATION_KNOCKOUT))
+	if(!checkClickCooldown() || incapacitated(INCAPACITATION_KNOCKOUT) || is_paralyzed())
 		return
 
 	setClickCooldown(DEFAULT_ATTACK_COOLDOWN)
@@ -645,8 +653,9 @@
 
 	else if(alerts && alerts["leashed"])
 		var/atom/movable/screen/alert/leash_pet/pet_alert = src.alerts["leashed"]
-		var/obj/item/leash/owner = pet_alert.master
-		owner.clear_leash()
+		var/obj/item/leash/owner = pet_alert.master_ref?.resolve()
+		if(owner)
+			owner.clear_leash()
 		log_and_message_admins("used the OOC escape button to get out of a leash.", src)
 
 	//Don't appear to be in a vore situation
@@ -691,7 +700,7 @@
 /obj/belly/return_air()
 	return return_air_for_internal_lifeform()
 
-/obj/belly/return_air_for_internal_lifeform(var/mob/living/lifeform)
+/obj/belly/return_air_for_internal_lifeform(mob/living/lifeform)
 	//Free air until someone wants to code processing it for reals from predbreaths
 	var/air_type = /datum/gas_mixture/belly_air
 	if(istype(lifeform))	// If this doesn't succeed, then 'lifeform' is actually a bag or capture crystal with someone inside
@@ -769,18 +778,39 @@
 	gas = list(
 		GAS_CH4 = 100)
 
-/mob/living/proc/feed_grabbed_to_self_falling_nom(var/mob/living/user, var/mob/living/prey)
+/mob/living/proc/feed_grabbed_to_self_falling_nom(mob/living/user, mob/living/prey)
 	if(user.is_incorporeal())
 		return FALSE
 	var/belly = user.vore_selected
 	return begin_instant_nom(user, prey, user, belly)
+
+/mob/living/proc/get_current_spont_belly(atom/movable/preything)
+	var/direction_diff = angle2dir_cardinal(dir2angle(get_dir(src, preything)) - dir2angle(dir))
+	var/spont_belly_name
+	switch(direction_diff)
+		if(NORTH)
+			if(spont_belly_front)
+				spont_belly_name = spont_belly_front
+		if(SOUTH)
+			if(spont_belly_rear)
+				spont_belly_name = spont_belly_rear
+		if(EAST)
+			if(spont_belly_right)
+				spont_belly_name = spont_belly_right
+		if(WEST)
+			if(spont_belly_left)
+				spont_belly_name = spont_belly_left
+	for(var/obj/belly/lookup_belly in vore_organs)
+		if(lookup_belly.name == spont_belly_name)
+			return lookup_belly
+	return vore_selected
 
 /mob/living/proc/glow_toggle()
 	set name = "Glow (Toggle)"
 	set category = "Abilities.General"
 	set desc = "Toggle your glowing on/off!"
 
-	if(stat || paralysis || weakened || stunned || world.time < last_special)
+	if(stat || is_paralyzed() || weakened || stunned || world.time < last_special)
 		to_chat(src, span_warning("You can't do that in your current state."))
 		return
 
@@ -812,7 +842,7 @@
 	set category = "Abilities.Vore"
 	set desc = "Consume held garbage."
 
-	if(stat || paralysis || weakened || stunned || world.time < last_special)
+	if(stat || is_paralyzed() || weakened || stunned || world.time < last_special)
 		to_chat(src, span_warning("You can't do that in your current state."))
 		return
 
@@ -829,7 +859,7 @@
 		if(!I.on_trash_eaten(src)) // shows object's rejection message itself
 			return
 		drop_item()
-		I.forceMove(vore_selected)
+		vore_selected.nom_atom(I)
 		updateVRPanel()
 		log_admin("VORE: [src] used Eat Trash to swallow [I].")
 		I.after_trash_eaten(src)
@@ -895,7 +925,7 @@
 		)
 		if(O.material in rock_munch)
 			nom	= rock_munch[O.material]
-			M 	= name_to_material[O.material]
+			M 	= GLOB.name_to_material[O.material]
 		else if(istype(O, /obj/item/ore/slag))
 			nom	= list("nutrition" = 15, "remark" = "You taste dusty, crunchy mistakes. This is a travesty... but at least it is an edible one.",  "WTF" = FALSE)
 		else //Random rock.
@@ -936,7 +966,7 @@
 			var/obj/item/stack/material/stack = O.split(1) //A little off the top.
 			I	= stack
 			nom	= refined_taste[O.default_type]
-			M	= name_to_material[O.default_type]
+			M	= GLOB.name_to_material[O.default_type]
 	else if(istype(I, /obj/item/entrepreneur/crystal))
 		nom = list("nutrition" = 100,  "remark" = "The crytal was particularly brittle and not difficult to break apart, but the inside was incredibly flavoursome. Though devoid of any actual healing power, it seems to be very nutritious!", "WTF" = FALSE)
 
@@ -1059,10 +1089,14 @@
 		dat += span_bold("Affected by temperature:") + " [allowtemp ? span_green("Enabled") : span_red("Disabled")]<br>"
 		dat += span_bold("Autotransferable:") + " [autotransferable ? span_green("Enabled") : span_red("Disabled")]<br>"
 		dat += span_bold("Can be stripped:") + " [strip_pref ? span_green("Allowed") : span_red("Disallowed")]<br>"
+		dat += span_bold("Size Change Strip Mode Pref:") + " [src.size_strip_preference]<br>"
+		dat += span_bold("Worn items can be contaminated:") + " [contaminate_pref ? span_green("Allowed") : span_red("Disallowed")]<br>"
 		dat += span_bold("Applying reagents:") + " [apply_reagents ? span_green("Allowed") : span_red("Disallowed")]<br>"
 		dat += span_bold("Leaves Remains:") + " [digest_leave_remains ? span_green("Enabled") : span_red("Disabled")]<br>"
-	dat += span_bold("Spontaneous vore prey:") + " [can_be_drop_prey ? span_green("Enabled") : span_red("Disabled")]<br>"
+		dat += span_bold("Spontaneous vore prey:") + " [can_be_drop_prey ? span_green("Enabled") : span_red("Disabled")]<br>"
+		dat += span_bold("AFK/Disconnected vore prey:") + " [can_be_afk_prey ? span_green("Enabled") : span_red("Disabled")]<br>"
 	dat += span_bold("Spontaneous vore pred:") + " [can_be_drop_pred ? span_green("Enabled") : span_red("Disabled")]<br>"
+	dat += span_bold("AFK/Disconnected vore pred:") + " [can_be_afk_pred ? span_green("Enabled") : span_red("Disabled")]<br>"
 	if(can_be_drop_prey || can_be_drop_pred)
 		dat += span_bold("Drop Vore:") + " [drop_vore ? span_green("Enabled") : span_red("Disabled")]<br>"
 		dat += span_bold("Slip Vore:") + " [slip_vore ? span_green("Enabled") : span_red("Disabled")]<br>"
@@ -1095,11 +1129,8 @@
 
 // Full screen belly overlays!
 /atom/movable/screen/fullscreen/belly
-	icon = 'icons/mob/vore_fullscreens/screen_full_vore_list.dmi'
 
 /atom/movable/screen/fullscreen/belly/fixed
-	icon = 'icons/mob/screen_full_vore.dmi'
-	icon_state = ""
 
 /mob/living/proc/vorebelly_printout() //Spew the vorepanel belly messages into chat window for copypasting.
 	set name = "X-Print Vorebelly Settings"
@@ -1277,6 +1308,8 @@
 	if(screen_icon)
 		owner?.client?.screen -= screen_icon
 		UnregisterSignal(screen_icon, COMSIG_CLICK)
+		var/datum/hud/HUD = owner?.hud_used
+		LAZYREMOVE(HUD?.other_important, screen_icon)
 		QDEL_NULL(screen_icon)
 	remove_verb(owner, /mob/proc/insidePanel)
 	QDEL_NULL(owner.vorePanel)
@@ -1370,7 +1403,7 @@
 	set desc = "Transfer liquid from an organ to another or stomach, or into another person or container."
 	set popup_menu = FALSE
 
-	if(!checkClickCooldown() || incapacitated(INCAPACITATION_KNOCKOUT))
+	if(!checkClickCooldown() || incapacitated(INCAPACITATION_KNOCKOUT) || is_paralyzed())
 		return FALSE
 
 	var/mob/living/user = src
@@ -1547,7 +1580,7 @@
 			if(soundfile)
 				playsound(src, soundfile, vol = 100, vary = 1, falloff = VORE_SOUND_FALLOFF, preference = /datum/preference/toggle/eating_noises)
 
-/mob/living/proc/vore_bellyrub(var/mob/living/T in view(1,src))
+/mob/living/proc/vore_bellyrub(mob/living/T in view(1,src))
 
 	if(!T)
 		return FALSE

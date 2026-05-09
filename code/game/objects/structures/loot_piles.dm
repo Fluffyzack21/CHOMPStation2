@@ -28,7 +28,7 @@ Loot piles can be depleted, if loot_depleted is turned on.  Note that players wh
 	var/busy = FALSE				// Used so you can't spamclick to loot.
 	var/loot_element_path = null
 
-/obj/structure/loot_pile/attack_ai(var/mob/user)
+/obj/structure/loot_pile/attack_ai(mob/user)
 	if(isrobot(user) && Adjacent(user))
 		return attack_hand(user)
 
@@ -47,6 +47,7 @@ Loot piles can be depleted, if loot_depleted is turned on.  Note that players wh
 		busy = TRUE
 		if(do_after(user, rand(4 SECONDS,6 SECONDS), target = src))
 			SEND_SIGNAL(src,COMSIG_LOOT_REWARD,L,searchedby)
+			SEND_GLOBAL_SIGNAL(COMSIG_GLOB_TRASHPILE_SEARCHED,L,searchedby)
 		busy = FALSE
 	else
 		return ..()

@@ -16,6 +16,7 @@
 	// Can't be set on these
 	src.verbs -= /obj/machinery/reagent_refinery/verb/set_APTFT
 	AddElement(/datum/element/climbable)
+	flags |= NOREACT
 
 /obj/machinery/reagent_refinery/waste_processor/process()
 	if(!anchored)
@@ -36,35 +37,14 @@
 /obj/machinery/reagent_refinery/waste_processor/update_icon()
 	cut_overlays()
 	if(anchored)
-		for(var/direction in GLOB.cardinal)
-			var/turf/T = get_step(get_turf(src),direction)
-			var/obj/machinery/other = locate(/obj/machinery/reagent_refinery) in T
-			if(other && other.anchored)
-				// Waste processors do not connect to anything as outgoing
-				if(istype(other,/obj/machinery/reagent_refinery/waste_processor))
-					continue
-				// weird handling for side connections... Otherwise, anything pointing into use gets connected back!
-				if(istype(other,/obj/machinery/reagent_refinery/filter))
-					var/obj/machinery/reagent_refinery/filter/filt = other
-					var/check_dir = 0
-					if(filt.get_filter_side() == 1)
-						check_dir = turn(filt.dir, 270)
-					else
-						check_dir = turn(filt.dir, 90)
-					if(check_dir == GLOB.reverse_dir[direction])
-						var/image/intake = image(icon, icon_state = "waste_intakes", dir = direction)
-						add_overlay(intake)
-						continue
-				if(other.dir == GLOB.reverse_dir[direction])
-					var/image/intake = image(icon, icon_state = "waste_intakes", dir = direction)
-					add_overlay(intake)
+		update_input_connection_overlays("waste_intakes")
 
 /obj/machinery/reagent_refinery/waste_processor/examine(mob/user, infix, suffix)
 	. = ..()
 	. += "The meter shows [reagents.total_volume]u / [reagents.maximum_volume]u. It is pumping chemicals at a rate of [amount_per_transfer_from_this]u."
 	tutorial(REFINERY_TUTORIAL_ALLIN, .)
 
-/obj/machinery/reagent_refinery/waste_processor/MouseDrop_T(var/atom/movable/C, mob/user as mob)
+/obj/machinery/reagent_refinery/waste_processor/MouseDrop_T(atom/movable/C, mob/user as mob)
 	if(user.buckled || user.stat || user.restrained() || !Adjacent(user) || !user.Adjacent(C) || !istype(C) || (user == C && !user.canmove))
 		return
 	if(istype(C,/obj/vehicle/train/trolley_tank))

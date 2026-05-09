@@ -49,7 +49,7 @@
 	ideal_air_type = /datum/gas_mixture/belly_air/vox
 	siemens_coefficient = 0.2
 
-	flags = NO_DNA | NO_SLEEVE | NO_DEFIB
+	flags = NO_DNA | NO_SLEEVE
 	spawn_flags = SPECIES_CAN_JOIN | SPECIES_IS_WHITELISTED | SPECIES_WHITELIST_SELECTABLE
 	appearance_flags = HAS_EYE_COLOR | HAS_HAIR_COLOR | HAS_SKIN_COLOR
 
@@ -75,27 +75,27 @@
 
 
 	has_organ = list(
-		O_HEART =    /obj/item/organ/internal/heart/vox,
-		O_LUNGS =    /obj/item/organ/internal/lungs/vox,
-		O_VOICE =	 /obj/item/organ/internal/voicebox,
-		O_LIVER =    /obj/item/organ/internal/liver/vox,
-		O_KIDNEYS =  /obj/item/organ/internal/kidneys/vox,
-		O_BRAIN =    /obj/item/organ/internal/brain/vox,
-		O_EYES =     /obj/item/organ/internal/eyes,
+		O_HEART =	/obj/item/organ/internal/heart/vox,
+		O_LUNGS =	/obj/item/organ/internal/lungs/vox,
+		O_VOICE =	/obj/item/organ/internal/voicebox/vox,
+		O_LIVER =	/obj/item/organ/internal/liver/vox,
+		O_KIDNEYS =	/obj/item/organ/internal/kidneys/vox,
+		O_BRAIN =	/obj/item/organ/internal/brain/vox,
+		O_EYES =	/obj/item/organ/internal/eyes,
 		)
 
 	genders = list(NEUTER)
 
 	default_emotes = list(
-		/decl/emote/audible/vox_shriek
+		/datum/decl/emote/audible/vox_shriek
 	)
 	inherent_verbs = list(/mob/living/carbon/human/proc/tie_hair) //Get ya quills done did
 
-/datum/species/vox/get_random_name(var/gender)
+/datum/species/vox/get_random_name(gender)
 	var/datum/language/species_language = GLOB.all_languages[default_language]
 	return species_language.get_random_name(gender)
 
-/datum/species/vox/equip_survival_gear(var/mob/living/carbon/human/H, var/extendedtank = 0,var/comprehensive = 0)
+/datum/species/vox/equip_survival_gear(mob/living/carbon/human/H, extendedtank = 0,comprehensive = 0)
 	. = ..()
 
 	H.equip_to_slot_or_del(new /obj/item/clothing/mask/breath(H), slot_wear_mask)

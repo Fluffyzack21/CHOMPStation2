@@ -29,7 +29,7 @@
 	update_icon()
 
 //Some belts have sprites to show icons
-/obj/item/storage/belt/make_worn_icon(var/body_type,var/slot_name,var/inhands,var/default_icon,var/default_layer = 0,var/icon/clip_mask = null)
+/obj/item/storage/belt/make_worn_icon(body_type,slot_name,inhands,default_icon,default_layer = 0,icon/clip_mask = null)
 	var/image/standing = ..()
 	if(!inhands && contents.len)
 		for(var/obj/item/i in contents)
@@ -84,7 +84,11 @@
 		/obj/item/integrated_electronics/debugger,
 		/obj/item/shovel/spade,
 		/obj/item/stack/nanopaste,
-		/obj/item/geiger
+		/obj/item/geiger,
+		/obj/item/reagent_scanner,
+		/obj/item/lightpainter,
+		/obj/item/anomaly_releaser,
+		/obj/item/anomaly_scanner
 		)
 
 /obj/item/storage/belt/utility/full
@@ -106,6 +110,16 @@
 		/obj/item/tool/wirecutters,
 		/obj/item/stack/cable_coil/random_belt,
 		/obj/item/multitool
+	)
+
+/obj/item/storage/belt/utility/chemtech
+	starts_with = list(
+		/obj/item/tool/screwdriver,
+		/obj/item/tool/wrench,
+		/obj/item/weldingtool,
+		/obj/item/tool/crowbar,
+		/obj/item/tool/wirecutters,
+		/obj/item/reagent_scanner
 	)
 
 /obj/item/storage/belt/utility/atmostech
@@ -220,7 +234,9 @@
 		/obj/item/stack/material/glass,
 		/obj/item/lightreplacer,
 		/obj/item/pickaxe/plasmacutter,
-		/obj/item/holosign_creator/combifan
+		/obj/item/holosign_creator/combifan,
+		/obj/item/reagent_scanner,
+		/obj/item/lightpainter
 	)
 
 
@@ -538,7 +554,8 @@
 		/obj/item/pickaxe/hand,
 		/obj/item/xenoarch_multi_tool,
 		/obj/item/pickaxe/excavationdrill,
-		/obj/item/storage/sample_container
+		/obj/item/storage/sample_container,
+		/obj/item/storage/bag/fossils
 		)
 
 /obj/item/storage/belt/fannypack
@@ -724,7 +741,7 @@
 		/obj/item/melee,
 		/obj/item/kinetic_crusher,
 		/obj/item/mining_scanner,
-		/obj/item/storage/bag/ore,
+		/obj/item/ore_bag,
 		/obj/item/storage/sample_container
 		)
 		//Pretty much, if it's in the mining vendor, they should be able to put it on the belt.

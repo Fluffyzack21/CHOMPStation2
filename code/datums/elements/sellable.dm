@@ -6,15 +6,15 @@
 	. = ..()
 	if(!isobj(target))
 		return ELEMENT_INCOMPATIBLE
-	RegisterSignal(target, COMSIG_ITEM_SOLD, PROC_REF(sell))
+	RegisterSignal(target, COMSIG_ITEM_EXPORTED, PROC_REF(sell))
 	RegisterSignal(target, COMSIG_ITEM_SCAN_PROFIT, PROC_REF(calculate_sell_value))
-	RegisterSignal(target, COMSIG_PARENT_EXAMINE, PROC_REF(on_examine))
+	RegisterSignal(target, COMSIG_ATOM_EXAMINE, PROC_REF(on_examine))
 	return
 
 /datum/element/sellable/Detach(datum/source)
-	UnregisterSignal(source, COMSIG_ITEM_SOLD)
+	UnregisterSignal(source, COMSIG_ITEM_EXPORTED)
 	UnregisterSignal(source, COMSIG_ITEM_SCAN_PROFIT)
-	UnregisterSignal(source, COMSIG_PARENT_EXAMINE)
+	UnregisterSignal(source, COMSIG_ATOM_EXAMINE)
 	return ..()
 
 // Override this for sub elements that need to do complex calculations when sold
@@ -28,7 +28,7 @@
 	return 1
 // End overrides
 
-/datum/element/sellable/proc/sell(obj/source, var/datum/exported_crate/EC, var/in_crate)
+/datum/element/sellable/proc/sell(obj/source, datum/exported_crate/EC, in_crate)
 	SIGNAL_HANDLER
 
 	if(needs_crate && !in_crate)
@@ -70,6 +70,8 @@
 /datum/element/sellable/material_stack/calculate_sell_value(obj/source)
 	var/obj/item/stack/P = source
 	var/datum/material/mat = P.get_material()
+	if(!mat || !mat.supply_conversion_value)
+		return 0
 	return P.get_amount() * mat.supply_conversion_value
 
 /datum/element/sellable/material_stack/calculate_sell_quantity(obj/source)
@@ -142,6 +144,8 @@
 
 /datum/element/sellable/trolley_tank/calculate_sell_value(obj/source)
 	var/obj/vehicle/train/trolley_tank/tank = source
+	if(!length(tank.reagents.reagent_list))
+		return 0
 
 	// Update export values
 	var/datum/reagent/R = tank.reagents.reagent_list[1]
@@ -156,7 +160,7 @@
 	var/datum/reagent/R = tank.reagents.reagent_list[1]
 	return "[R.name] [tank.reagents.total_volume]u "
 
-/datum/element/sellable/trolley_tank/sell(obj/source, var/datum/exported_crate/EC, var/in_crate)
+/datum/element/sellable/trolley_tank/sell(obj/source, datum/exported_crate/EC, in_crate)
 	. = ..()
 	var/obj/vehicle/train/trolley_tank/tank = source
 	if(. && tank.reagents?.reagent_list?.len)

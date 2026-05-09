@@ -84,7 +84,7 @@
 	else
 		. = PROCESS_KILL
 
-/obj/machinery/atmospherics/pipe/manifold4w/change_color(var/new_color)
+/obj/machinery/atmospherics/pipe/manifold4w/change_color(new_color)
 	..()
 	//for updating connected atmos device pipes (i.e. vents, manifolds, etc)
 	if(node1)
@@ -96,15 +96,12 @@
 	if(node4)
 		node4.update_underlays()
 
-/obj/machinery/atmospherics/pipe/manifold4w/update_icon(var/safety = 0)
-	if(!check_icon_cache())
-		return
-
+/obj/machinery/atmospherics/pipe/manifold4w/update_icon(safety = 0)
 	alpha = 255
 
 	cut_overlays()
-	add_overlay(icon_manager.get_atmos_icon("manifold", , pipe_color, "4way" + icon_connect_type))
-	add_overlay(icon_manager.get_atmos_icon("manifold", , , "clamps_4way" + icon_connect_type))
+	add_overlay(GLOB.icon_manager.get_atmos_icon("manifold", , pipe_color, "4way" + icon_connect_type))
+	add_overlay(GLOB.icon_manager.get_atmos_icon("manifold", , , "clamps_4way" + icon_connect_type))
 	underlays.Cut()
 
 	var/turf/T = get_turf(src)

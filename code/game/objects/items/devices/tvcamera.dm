@@ -24,6 +24,7 @@
 	qdel(radio)
 	camera = null
 	radio = null
+	showing = null
 	. = ..()
 
 /obj/item/tvcamera/examine()
@@ -48,6 +49,9 @@
 	. = ..()
 
 /obj/item/tvcamera/attack_self(mob/user)
+	. = ..(user)
+	if(.)
+		return TRUE
 	add_fingerprint(user)
 	user.set_machine(src)
 	show_ui(user)
@@ -157,7 +161,7 @@
 
 /obj/item/tvcamera/proc/update_feed()
 	if(camera.status)
-		SEND_SIGNAL(camera, COMSIG_OBSERVER_MOVED) // Forward the movement signal
+		SEND_SIGNAL(camera, COMSIG_MOVABLE_ATTEMPTED_MOVE) // Forward the movement signal
 
 // CHOMPEdit Start - Bodycam
 // Security Bodycam
@@ -176,6 +180,7 @@
 	var/obj/item/radio/bradio
 	var/datum/weakref/showing
 	var/showing_name
+	special_handling = TRUE
 
 /obj/item/clothing/accessory/bodycam/Initialize(mapload)
 	. = ..()
@@ -211,6 +216,9 @@
 	. = ..()
 
 /obj/item/clothing/accessory/bodycam/attack_self(mob/user)
+	. = ..(user)
+	if(.)
+		return TRUE
 	add_fingerprint(user)
 	//user.set_machine(src)
 	show_bodycam_ui(user)
@@ -310,16 +318,10 @@
 
 /obj/item/clothing/accessory/bodycam/proc/update_feed()
 	if(bcamera.status)
-		SEND_SIGNAL(bcamera, COMSIG_OBSERVER_MOVED) // Forward the movement signal
+		SEND_SIGNAL(bcamera, COMSIG_MOVABLE_ATTEMPTED_MOVE) // Forward the movement signal
 
 /obj/item/clothing/accessory/bodycam/update_icon()
 	..()
-	if(bcamera.status)
-		icon_state = "eshield"
-		item_state = "eshield"
-	else
-		icon_state = "eshield"
-		item_state = "eshield"
 	var/mob/living/carbon/human/H = loc
 	if(istype(H))
 		H.update_inv_r_hand()
@@ -329,7 +331,7 @@
 
 //Assembly by roboticist
 
-/obj/item/robot_parts/head/attackby(var/obj/item/assembly/S, mob/user as mob)
+/obj/item/robot_parts/head/attackby(obj/item/assembly/S, mob/user as mob)
 	if(!istype(S, /obj/item/assembly/infra))
 		..()
 		return
